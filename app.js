@@ -40,7 +40,7 @@ function prepareNotice(n, recipient) {
   const subject='Aviso de pantalla';
   return {recipient,subject,body,url:'mailto:'+encodeURIComponent(recipient).replace(/%40/g,'@')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body)};
 }
-try { $('recipient').value = localStorage.getItem('aoraNoticeRecipient') || ''; } catch {}
+$('recipient').value = 'rosapersonal@gmail.com';
 const initial = new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(Date.now()+60000));
 $('start').value = initial.replace(' ', 'T');
 $('modes').addEventListener('click', event => {
@@ -63,7 +63,6 @@ $('form').addEventListener('submit', event => {
   event.preventDefault();
   try {
     pending=prepareNotice({text:$('text').value,start:$('start').value,end:$('end').value,mode,unit,duration:$('duration').value},$('recipient').value.trim());
-    try { localStorage.setItem('aoraNoticeRecipient',pending.recipient); } catch {}
     $('summary').textContent='Para: '+pending.recipient+'\nAsunto: '+pending.subject+'\n\n'+pending.body;
     $('send').href=pending.url;
     $('review').hidden=false; $('status').hidden=true;
