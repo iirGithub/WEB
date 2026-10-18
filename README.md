@@ -1,15 +1,21 @@
 # AORA · Avisos desde el móvil
 
-Formulario para GitHub Pages. Selecciona texto, inicio y duración en minutos u horas, o una fecha de final.
+Formulario público: https://iirgithub.github.io/WEB/.
+
+Selecciona texto, inicio y duración en minutos u horas, o fecha final. Revisa el aviso y pulsa Enviar.
+
+## Acceso
+
+Por decisión del usuario, cualquiera que tenga el enlace puede enviar avisos sin identificarse, sin clave, cuenta ni sesión. El receptor no exige credenciales. CORS restringe los navegadores al origen configurado, pero no es autenticación ni impide peticiones de otros clientes.
 
 ## Estado
 
-Interfaz preparada y probada en vista móvil. El envío directo está desactivado hasta configurar una entrada HTTPS protegida en GROS y su dirección en `config.js`.
+Web publicada. Envío pendiente de conectar una entrada HTTPS en GROS y su dirección en `config.js`. Hasta entonces se puede preparar y revisar el aviso, pero no enviarlo.
 
-La clave se introduce al enviar y no se incluye en este repositorio ni se guarda en almacenamiento local. Los nodos de GROS y su configuración se mantienen fuera de este repositorio público.
+Se conservan la validación del texto y fechas, la conversión de horas a minutos, los identificadores para reintentos y el límite global de 20 avisos nuevos por minuto en GROS. Los nodos de GROS y su configuración se mantienen fuera de este repositorio público.
+
+Una respuesta de aceptación de GROS no confirma la entrega del correo ni la programación en SERT.
 
 ## Publicación
 
-GitHub Pages: rama `main`, carpeta raíz. Dirección prevista: https://iirgithub.github.io/WEB/.
-
-El formulario convierte las horas a minutos. Una respuesta de aceptación de GROS no confirma la entrega del correo ni la programación en SERT.
+GitHub Pages: rama `main`, carpeta raíz.
