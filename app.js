@@ -1,80 +1,83 @@
 'use strict';
 const $ = id => document.getElementById(id);
-let mode = 'duration', unit = 'minutes', pending = null, sending = false;
+let mode = 'duration', unit = 'minutes', pending = null;
 function status(text, error = false) {
   $('status').textContent = text; $('status').hidden = false;
   $('status').className = 'status' + (error ? ' error' : '');
 }
+function invalidate() { pending = null; $('review').hidden = true; $('send').removeAttribute('href'); }
 function updateAmount() {
   $('duration').max = unit === 'hours' ? 24 : 60;
-  if (Number($('duration').value) > Number($('duration').max)) $('duration').value = $('duration').max;
   $('amount').textContent = $('duration').value;
   $('unit-label').textContent = unit === 'hours' ? 'h' : 'min';
   $('equivalent').textContent = unit === 'hours'
     ? 'Equivale a ' + Number($('duration').value) * 60 + ' minutos.'
     : 'Entre 1 y 60 minutos.';
 }
-function invalidate() { pending = null; $('review').hidden = true; }
-function lock(value) {
-  sending = value;
-  for (const el of $('form').querySelectorAll('input,textarea,select,button')) el.disabled = value;
-  $('send').textContent = value ? 'Enviando…' : 'Enviar aviso a GROS';
+function madridDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return NaN;
+  const [y,m,d,h,min] = value.match(/\d+/g).map(Number);
+  const wall = Date.UTC(y,m-1,d,h,min);
+  const formatter = new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+  const offsets = new Set([-36,0,36].map(hours=>{
+    const sample = new Date(wall + hours*3600000);
+    const p = Object.fromEntries(formatter.formatToParts(sample).map(x=>[x.type,x.value]));
+    return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-sample.getTime();
+  }));
+  const candidates = [...offsets].map(offset=>wall-offset).filter(ms=>formatter.format(new Date(ms)).replace(' ','T')===value);
+  return candidates.length ? Math.min(...candidates) : NaN;
 }
-const endpoint = window.AORA_CONFIG?.endpoint || '';
-let endpointReady = false;
-try { const url = new URL(endpoint); endpointReady = url.protocol === 'https:' && !url.username && !url.password; } catch {}
-$('setup').hidden = endpointReady;
+function prepareNotice(n, recipient) {
+  if (!/^[^\s@<>:,;?]+@[^\s@<>:,;?]+\.[^\s@<>:,;?]+$/.test(recipient)) throw Error('Introduce el correo de destino.');
+  const text = n.text.trim(), start = madridDate(n.start);
+  if (!text || text.length>2000 || /^\s*(?:Inicio|Fin|Fecha.*|Duraci[oó]n(?: en minutos)?)\s*:/im.test(text)) throw Error('Escribe el aviso sin líneas de programación como Inicio:, Fin: o Duración:.');
+  const duration = Number(n.duration) * (n.unit==='hours'?60:1);
+  if (!['duration','end'].includes(n.mode)) throw Error('Selecciona cómo finalizar el aviso.');
+  if(n.mode==='duration' && (!['minutes','hours'].includes(n.unit) || !Number.isInteger(Number(n.duration)) || Number(n.duration)<1 || Number(n.duration)>(n.unit==='hours'?24:60))) throw Error('Selecciona una duración válida.');
+  const end = n.mode==='end' ? madridDate(n.end) : start+duration*60000;
+  if (!Number.isFinite(start)||!Number.isFinite(end)||end<=start||end<=Date.now()) throw Error('Revisa las fechas: el final debe ser posterior al comienzo y a la hora actual.');
+  const body='Inicio: '+n.start.replace('T',' ')+'\r\n'+(n.mode==='end'?'Fin: '+n.end.replace('T',' '):'Duración: '+duration)+'\r\n\r\n'+text;
+  const subject='Aviso de pantalla';
+  return {recipient,subject,body,url:'mailto:'+encodeURIComponent(recipient).replace(/%40/g,'@')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body)};
+}
+try { $('recipient').value = localStorage.getItem('aoraNoticeRecipient') || ''; } catch {}
 const initial = new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(Date.now()+60000));
 $('start').value = initial.replace(' ', 'T');
 $('modes').addEventListener('click', event => {
-  const button = event.target.closest('[data-mode]'); if (!button || sending) return;
+  const button = event.target.closest('[data-mode]'); if (!button) return;
   mode = button.dataset.mode;
   for (const b of $('modes').children) b.setAttribute('aria-pressed', String(b === button));
   $('end-fields').hidden = mode !== 'end'; $('end').required = mode === 'end';
   $('duration-fields').hidden = mode !== 'duration'; invalidate();
 });
 $('units').addEventListener('click', event => {
-  const button = event.target.closest('[data-unit]'); if (!button || sending) return;
+  const button = event.target.closest('[data-unit]'); if (!button) return;
   unit = button.dataset.unit;
   for (const b of $('units').children) b.setAttribute('aria-pressed', String(b === button));
   updateAmount(); invalidate();
 });
 $('duration').addEventListener('input', updateAmount);
-for (const id of ['text','start','end','duration']) $(id).addEventListener('input', invalidate);
+for (const id of ['recipient','text','start','end','duration']) $(id).addEventListener('input', invalidate);
 $('edit').addEventListener('click', () => { invalidate(); $('text').focus(); });
 $('form').addEventListener('submit', event => {
-  event.preventDefault(); if (sending) return;
-  const text = $('text').value.trim(), duration = Number($('duration').value) * (unit === 'hours' ? 60 : 1);
-  if (!text || /^\s*(?:Inicio|Fin|Fecha.*|Duraci[oó]n(?: en minutos)?)\s*:/im.test(text)) {
-    status('Escribe el aviso sin líneas de programación como Inicio:, Fin: o Duración:.',true); return;
-  }
-  if (mode === 'end' && $('end').value <= $('start').value) {
-    status('El final debe ser posterior al comienzo.',true); return;
-  }
-  if (!crypto.randomUUID) { status('Abre el formulario mediante HTTPS para continuar.',true); return; }
-  pending = {requestId:crypto.randomUUID(),notice:{text,start:$('start').value,end:$('end').value,mode,duration}};
-  $('summary').textContent = text + '\n\nInicio: ' + pending.notice.start.replace('T',' ') +
-    '\n' + (mode === 'end' ? 'Fin: ' + pending.notice.end.replace('T',' ') : 'Duración: ' + $('duration').value + (unit === 'hours' ? ' h' : ' min'));
-  $('review').hidden = false; $('status').hidden = true; $('send').disabled = !endpointReady;
-  $('review').scrollIntoView({behavior:'smooth',block:'nearest'}); if (endpointReady) $('send').focus();
-});
-$('send').addEventListener('click', async () => {
-  if (sending || !pending || !endpointReady) return;
-  lock(true);
+  event.preventDefault();
   try {
-    const response = await fetch(endpoint, {
-      method:'POST',mode:'cors',credentials:'omit',cache:'no-store',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(pending),signal:AbortSignal.timeout(20000)
-    });
-    const data = await response.json();
-    if (!response.ok || data.accepted !== true) throw Error(data.error || 'GROS no ha aceptado la solicitud.');
-    pending = null; $('review').hidden = true;
-    status('GROS ha aceptado la solicitud para enviarla por correo a SERT. Comprueba después la lista de avisos del dashboard.');
-  } catch (error) {
-    status(error.name === 'TypeError' || error.name === 'TimeoutError'
-      ? 'No se pudo confirmar la respuesta de GROS. Revisa la conexión. Puedes reintentar este mismo aviso; conserva su identificador para evitar duplicados.'
-      : error.message,true);
-  } finally { lock(false); }
+    pending=prepareNotice({text:$('text').value,start:$('start').value,end:$('end').value,mode,unit,duration:$('duration').value},$('recipient').value.trim());
+    try { localStorage.setItem('aoraNoticeRecipient',pending.recipient); } catch {}
+    $('summary').textContent='Para: '+pending.recipient+'\nAsunto: '+pending.subject+'\n\n'+pending.body;
+    $('send').href=pending.url;
+    $('review').hidden=false; $('status').hidden=true;
+    $('review').scrollIntoView({behavior:'smooth',block:'nearest'}); $('send').focus();
+  } catch(error) { invalidate(); status(error.message,true); }
 });
-
+$('send').addEventListener('click', event => {
+  if(!pending){event.preventDefault();return;}
+  status('Se ha solicitado abrir tu aplicación de correo. Allí debes pulsar Enviar. Si no se abre, utiliza «Copiar correo». El aviso todavía no está confirmado en SERT.');
+});
+$('copy').addEventListener('click', async () => {
+  if(!pending)return;
+  try {
+    await navigator.clipboard.writeText($('summary').textContent);
+    status('Correo copiado. Pégalo en tu aplicación de correo y comprueba destinatario y asunto antes de enviarlo.');
+  } catch { status('No se pudo copiar automáticamente. Selecciona y copia el texto de la revisión.',true); }
+});
