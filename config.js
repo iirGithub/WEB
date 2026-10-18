@@ -1,2 +1,1 @@
-// Dirección HTTPS de la entrada protegida de GROS. No incluir claves.
-window.AORA_CONFIG = Object.freeze({ endpoint: "" });
+// El formulario utiliza mailto; no necesita servidor remoto ni configuración de conexión.
