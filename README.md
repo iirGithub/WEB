@@ -1,21 +1,16 @@
-# AORA · Avisos desde el móvil
+# AORA · Avisos por correo desde el móvil
 
-Formulario público: https://iirgithub.github.io/WEB/.
+Formulario alojado en GitHub Pages: https://iirgithub.github.io/WEB/.
 
-Selecciona texto, inicio y duración en minutos u horas, o fecha final. Revisa el aviso y pulsa Enviar.
+1. Introduce el correo de destino de SERT. Se recuerda solo en ese dispositivo.
+2. Escribe el aviso, selecciona comienzo y duración (minutos/horas) o fecha final.
+3. Pulsa Revisar aviso y Abrir mi correo.
+4. Revisa el borrador y pulsa Enviar en tu aplicación de correo.
 
-## Acceso
+La web prepara un enlace mailto con destinatario, asunto Aviso de pantalla y cuerpo compatible con SERT. Dos horas se convierten en Duración: 120. La opción Copiar correo permite copiar los datos si el móvil no abre una aplicación de correo configurada.
 
-Por decisión del usuario, cualquiera que tenga el enlace puede enviar avisos sin identificarse, sin clave, cuenta ni sesión. El receptor no exige credenciales. CORS restringe los navegadores al origen configurado, pero no es autenticación ni impide peticiones de otros clientes.
+No necesita conexión directa con GROS, servidor adicional, Tailscale, claves ni identificación en el formulario. El envío requiere una aplicación de correo configurada en el móvil. La web no envía automáticamente ni confirma la entrega o programación.
 
-## Estado
+No se publica un destinatario personal fijo. Los textos y fechas permanecen en la página mientras está abierta; no se guardan como borradores persistentes. Solo se recuerda el correo de destino mediante almacenamiento local del navegador.
 
-Web publicada. Envío pendiente de conectar una entrada HTTPS en GROS y su dirección en `config.js`. Hasta entonces se puede preparar y revisar el aviso, pero no enviarlo.
-
-Se conservan la validación del texto y fechas, la conversión de horas a minutos, los identificadores para reintentos y el límite global de 20 avisos nuevos por minuto en GROS. Los nodos de GROS y su configuración se mantienen fuera de este repositorio público.
-
-Una respuesta de aceptación de GROS no confirma la entrega del correo ni la programación en SERT.
-
-## Publicación
-
-GitHub Pages: rama `main`, carpeta raíz.
+Publicación: rama main, carpeta raíz. config.js se conserva por compatibilidad y ya no se utiliza.
