@@ -56,21 +56,20 @@ $('form').addEventListener('submit', event => {
   $('summary').textContent = text + '\n\nInicio: ' + pending.notice.start.replace('T',' ') +
     '\n' + (mode === 'end' ? 'Fin: ' + pending.notice.end.replace('T',' ') : 'Duración: ' + $('duration').value + (unit === 'hours' ? ' h' : ' min'));
   $('review').hidden = false; $('status').hidden = true; $('send').disabled = !endpointReady;
-  $('review').scrollIntoView({behavior:'smooth',block:'nearest'}); $('key').focus();
+  $('review').scrollIntoView({behavior:'smooth',block:'nearest'}); if (endpointReady) $('send').focus();
 });
 $('send').addEventListener('click', async () => {
   if (sending || !pending || !endpointReady) return;
-  if ($('key').value.length < 32) { status('Introduce la clave de acceso de GROS (al menos 32 caracteres).',true); return; }
   lock(true);
   try {
     const response = await fetch(endpoint, {
       method:'POST',mode:'cors',credentials:'omit',cache:'no-store',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+$('key').value},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify(pending),signal:AbortSignal.timeout(20000)
     });
     const data = await response.json();
     if (!response.ok || data.accepted !== true) throw Error(data.error || 'GROS no ha aceptado la solicitud.');
-    $('key').value = ''; pending = null; $('review').hidden = true;
+    pending = null; $('review').hidden = true;
     status('GROS ha aceptado la solicitud para enviarla por correo a SERT. Comprueba después la lista de avisos del dashboard.');
   } catch (error) {
     status(error.name === 'TypeError' || error.name === 'TimeoutError'
@@ -78,3 +77,4 @@ $('send').addEventListener('click', async () => {
       : error.message,true);
   } finally { lock(false); }
 });
+
