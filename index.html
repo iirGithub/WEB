@@ -26,15 +26,15 @@ details{margin-top:24px}summary{cursor:pointer;font-size:14px}footer{font-size:1
 .review{margin-top:24px;border-top:1px solid #d8e5df;padding-top:12px}pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
 @media(max-width:380px){form{padding:18px}.segment{gap:5px}.segment button{font-size:13px}}
 </style>
-<script src="./app.js?v=correo1" defer></script>
+<script src="./app.js?v=correo2" defer></script>
 </head>
 <body><main>
 <header><span class="brand">AORA<span style="color:#087d71">.</span></span><span class="tag">Avisos de pantalla</span></header>
 <h1>Un mensaje para la pantalla.</h1>
 <p class="intro">Prepara el aviso y envíalo desde tu aplicación de correo.</p>
 <form id="form">
-<label for="recipient">Correo de destino de SERT</label><input id="recipient" type="email" autocomplete="email" required placeholder="Correo que recibe los avisos">
-<p class="hint">Se recuerda solo en este dispositivo.</p>
+<label for="recipient">Correo de destino de SERT</label><input id="recipient" value="rosapersonal@gmail.com" type="email" autocomplete="email" required placeholder="Correo que recibe los avisos">
+<p class="hint">El destinatario ya está preparado.</p>
 <label for="text">¿Qué quieres mostrar?</label>
 <textarea id="text" rows="3" maxlength="2000" placeholder="Por ejemplo: Esta tarde viene la familia a las cinco." required></textarea>
 <label for="start">Comenzar el</label><input id="start" type="datetime-local" required>
